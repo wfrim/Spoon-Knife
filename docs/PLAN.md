@@ -487,3 +487,34 @@ Three circles: **people** (individuals), **homes** (households), and **the publi
   - `apartment_roster` now returns `role`, so the app can draw key badges.
   - The roster rows are locked during key changes and move-outs, so two Keyholders acting at once can't orphan the home.
 - **Tests:** `supabase/tests/20_keyholders.sql`.
+
+### Oct 9 — built: neighbors, calling, invites, CI
+
+- **CI:** GitHub builds the iOS app for the simulator on every iOS change (no Apple account needed). It also runs the database tests and the Edge Function tests.
+- **Neighbors (`20261010000000_neighbors.sql`):**
+  - Contact matching uses HMAC-SHA256 with a server secret (`private.settings.contact_pepper`). Raw numbers are never stored, and a plain hash would be reversible.
+  - Matching works both ways.
+  - Removing a neighbor sticks, though either home can still ask again. Asking a home that already asked you accepts.
+  - Favorites are capped at 3. Blocks exist for homes and for people; asking a home that blocked you looks normal.
+  - `can_ring_home` / `can_call_user` decide every call. A person's verified phone comes only from phone sign-in (`auth.users.phone`), so nobody can claim a number.
+- **Calling (`20261011000000_calling.sql` and Edge Functions):**
+  - `place-call` checks the caller with `start_call`, then sends VoIP pushes to roommates who are home (never to the caller). The caller waits in the LiveKit room, so an answer connects instantly.
+  - After 30 s, `ring_out` sends home calls to voicemail and marks direct calls missed.
+  - `leave_voicemail` saves the message; hanging up sends it. `join_call` lets a roommate join a call placed as the home, and `end_call` hangs up.
+  - A pg_cron backstop settles abandoned rings.
+  - Blocked callers ring silently and never reach voicemail.
+  - Voicemail audio lives in the `voicemails` Storage bucket.
+- **iOS calling:**
+  - `CallManager` (CallKit + PushKit) reports each push immediately, then follows the call row: answered elsewhere, rang out, ended.
+  - Outgoing calls go through `place-call`, connect over LiveKit, and fall through to voicemail recording.
+  - The test app has "Call a home by handle".
+- **Invites (`20261013000000_invites_and_themes.sql`):**
+  - `invite_preview` works without an account.
+  - Homes hold at most 8 people.
+  - `apartments.theme` stores the home's style key (e.g. `sticker-bubblegum`), plus `greeting_url` for the greeting.
+  - The `invite-page` Edge Function renders the link preview in the home's theme, with the App Clip banner.
+  - The App Clip target joins the home, then offers the full app. The app also opens invite links.
+- **Design:**
+  - The five app tabs are now token-driven, with Simple and Rotary rows on the canvas.
+  - New screens: the invite link in Messages, the App Clip card, and App Clip join.
+- **What's next:** `docs/BACKLOG.md`.
