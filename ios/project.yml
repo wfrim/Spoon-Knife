@@ -21,10 +21,13 @@ targets:
       - path: ApartmentLine
     dependencies:
       - package: LiveKit
+      - target: ApartmentLineClip
     entitlements:
       path: ApartmentLine/ApartmentLine.entitlements
       properties:
         aps-environment: development
+        com.apple.developer.associated-domains:
+          - applinks:apartmentline.app
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
@@ -49,5 +52,45 @@ targets:
         UIBackgroundModes: [fetch, voip, audio]
         NSMicrophoneUsageDescription: Your microphone is used during calls and when you record a voicemail or greeting.
         BGTaskSchedulerPermittedIdentifiers: [app.apartmentline.heartbeat]
+        SupabaseURL: $(SUPABASE_URL)
+        SupabaseAnonKey: $(SUPABASE_ANON_KEY)
+
+  # The App Clip: opens from invite links, joins the home, offers the full app.
+  ApartmentLineClip:
+    type: application.on-demand-install-capable
+    platform: iOS
+    sources:
+      - path: AppClip
+      - path: ApartmentLine/Backend
+      - path: ApartmentLine/Views/InviteJoinView.swift
+    entitlements:
+      path: AppClip/AppClip.entitlements
+      properties:
+        com.apple.developer.parent-application-identifiers:
+          - $(AppIdentifierPrefix)$(APP_BUNDLE_ID)
+        com.apple.developer.associated-domains:
+          - appclips:apartmentline.app
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).Clip
+        DEVELOPMENT_TEAM: $(APP_DEVELOPMENT_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: AppClip/Info.plist
+      properties:
+        CFBundleDisplayName: Apartment Line
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSAppClip:
+          NSAppClipRequestEphemeralUserNotification: false
+          NSAppClipRequestLocationConfirmation: false
         SupabaseURL: $(SUPABASE_URL)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)

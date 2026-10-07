@@ -14,3 +14,5 @@ supabase/.branches
 supabase/.temp
 .env
 ios/ApartmentLine/ApartmentLine.entitlements
+ios/AppClip/Info.plist
+ios/AppClip/AppClip.entitlements

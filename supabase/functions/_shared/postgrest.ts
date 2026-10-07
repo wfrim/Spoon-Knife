@@ -15,12 +15,17 @@ export class Db {
     private fetcher: typeof fetch = fetch,
   ) {}
 
+  /**
+   * jwt: a user's token (their RLS applies), "anon" for no account, or null for
+   * the service role.
+   */
   private async request<T>(path: string, init: RequestInit, jwt: string | null): Promise<T> {
+    const key = jwt === null ? this.serviceKey : this.anonKey;
     const res = await this.fetcher(`${this.url}/rest/v1/${path}`, {
       ...init,
       headers: {
-        apikey: jwt ? this.anonKey : this.serviceKey,
-        authorization: `Bearer ${jwt ?? this.serviceKey}`,
+        apikey: key,
+        authorization: `Bearer ${jwt === null || jwt === "anon" ? key : jwt}`,
         "content-type": "application/json",
         ...(init.headers ?? {}),
       },

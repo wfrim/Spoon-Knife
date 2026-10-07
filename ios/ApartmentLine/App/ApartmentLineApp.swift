@@ -5,12 +5,21 @@ import SwiftUI
 struct ApartmentLineApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
+    @State private var invite: PendingInvite?
 
     var body: some Scene {
         WindowGroup {
             PresenceSpikeView()
                 .environmentObject(PresenceStore.shared)
                 .environmentObject(CallManager.shared)
+                // Invite links (https://apartmentline.app/j/<code>) open the join screen.
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    if let code = InviteLink.code(from: activity.webpageURL) { invite = PendingInvite(id: code) }
+                }
+                .onOpenURL { url in
+                    if let code = InviteLink.code(from: url) { invite = PendingInvite(id: code) }
+                }
+                .sheet(item: $invite) { invite in InviteJoinView(code: invite.id) }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -58,4 +67,9 @@ enum Heartbeat {
         request.earliestBeginDate = Date(timeIntervalSinceNow: AppConfig.heartbeatInterval)
         try? BGTaskScheduler.shared.submit(request)
     }
+}
+
+/// An invite code shown as a sheet.
+struct PendingInvite: Identifiable {
+    let id: String
 }

@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.app.apartmentline.yourname"],
+        "components": [{ "/": "/j/*", "comment": "Invite links open the app" }]
+      }
+    ]
+  },
+  "appclips": {
+    "apps": ["TEAMID.app.apartmentline.yourname.Clip"]
+  }
+}
