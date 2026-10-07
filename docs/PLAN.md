@@ -379,3 +379,25 @@ Design reference: canvas pages "v2 · Onboarding", "v2 · App", "v2 · Calling (
   - Open question: should only neighbors be able to ring you (others go straight to voicemail or a request)? This would answer the spam concern from decision 3.
 - **Home settings are their own screens** (style & colors, home area, invite, greeting), not the onboarding flow.
 - Schema implied: `neighbors (home_a, home_b, status, requested_by)`, `favorites (home_id, favorite_home_id)`, `calls.from_apartment_id` (already planned).
+
+## Who can reach whom (Oct 8)
+
+Three circles: **people** (individuals), **homes** (households), and **the public**.
+
+- **Neighbors** are homes connected to yours. The Neighborhood tab is the contact book, with a **Homes** view and a **People** view (your roommates, plus the people in neighbor homes).
+- **Neighbors happen automatically through contacts.** If anyone in home A has the phone number of anyone in home B (either direction), A and B become neighbors, with no request. Each neighbor row says why ("Alex is in your contacts", "Dee is in Sam's contacts").
+  - Contacts access is asked for in onboarding ("Find your people"), right after the how-it-works screen. It also surfaces homes your roommates already created.
+- **Everyone else** can find a home by name or handle and **ask to be neighbors**; anyone in that home can accept.
+- **Defaults, changeable in settings:**
+  - Who can ring a home: **Neighbors** (default) / Anyone / Nobody. Non-neighbors go straight to voicemail and can ask to be neighbors. Keyholders set this.
+  - Who can call *you* directly: **Contacts** (default) / Neighbors / Nobody.
+- **Favorites** are a private, per-home subset of neighbors.
+- **Blocking:** homes can block homes and people can block people. The blocked party isn't told, can't ring or call, and their calls don't reach voicemail. Unblock from "Who can reach you & blocking".
+- Supersedes decision 3 (anyone can call any apartment) and the request-only neighbor model from earlier today.
+- **Schema implied:**
+  - `contact_hashes` (user → hashed phone numbers, matched server-side; raw contact lists never stored)
+  - `neighbors` (home_a, home_b, source: contacts|request, status)
+  - `favorites` (home_id → home_id)
+  - `blocks` (blocker home/user → blocked home/user)
+  - `apartments.who_can_ring`
+  - `users.who_can_call`
