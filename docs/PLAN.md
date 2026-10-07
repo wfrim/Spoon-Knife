@@ -338,3 +338,34 @@ When calling, choose **Call as yourself** (default) or **Call as The Burrow**. C
 - `apartment_roster()` respects `share_status` and `visitor_presence`; drop `presence_at` from its output
 - `calls.from_apartment_id`
 - `message_listens` already supports the answering machine's "new" count
+
+## Product decisions (Oct 8): v2 prototype
+
+Design reference: canvas pages "v2 · Onboarding", "v2 · App", "v2 · Calling (by theme)".
+
+**Language.** The product says "home" ("One line for you and your roommates"). Admins are **Keyholders**: whoever creates a home is one, and Keyholders can hand keys to others. Keyholders approve join requests, edit the home's style and greeting, and remove roommates.
+
+**Where styles show.** A home is a place; the app is the hallway. Inside a home (yours or one you're calling) you see that home's style and colors; everywhere else (Recents, Phone, You, onboarding, settings) is the plain house style. Your own Voicemail and Home tabs wear your home's style. The tab bar is always house style.
+
+**Themes and color schemes.** Two layers: a theme (Simple, Sticker Book, Retro Rotary) and a curated, contrast-checked color scheme per theme with a default (Simple: Cobalt*, Ember, Forest, Plum; Sticker: Bubblegum*, Pool, Night; Rotary: Mustard*, Avocado, Rust, Bakelite). Picked in onboarding with a live preview of the home's profile; any roommate can change it later.
+
+**Tabs.** Voicemail · Recents · **Phone** (centre: the contact book: favorites, all homes, people, search and add) · *Your home* · You (personal profile and settings).
+
+**Onboarding.**
+1. Sign up with phone number (SMS code). Sign in with Apple is offered, but Apple doesn't share phone numbers, so Apple users are still asked for one.
+2. Name and photo, then a "how it works" screen that sets up the location ask.
+3. Create or join. Pending invites for your number are shown first ("Sam invited you to The Burrow").
+4. Create: name → style + colors → home area ("where can The Burrow ring you?") → location permission (Always) → invite roommates (contacts, number, link).
+5. Join: accept an invite, enter a code, or look a home up and **ask to join** (a Keyholder approves).
+6. Location denied: explain plainly that the home can't ring you, and keep a red fix-it banner in the app until it's on.
+
+**Calling.**
+- Ring for 30 s (about 6 rings; a home setting can change it), then voicemail starts automatically: the home's greeting (recorded by a roommate), a beep, recording up to 60 s.
+- After recording: play back, re-record, delete, or send. Hanging up sends, like a real answering machine.
+- Mute and Speaker on every call screen. No keypad, no FaceTime.
+- No text notes: voicemail only.
+- Copy: "Calling rings the roommates who are home" (no count, no names).
+
+**Moving out.** You → "Move out of <home>" → confirm (stop ringing; voicemails stay with the home; if you're the last Keyholder you must pass the keys) → create a new home, join one, or use an invite.
+
+**Schema additions implied:** `apartments.style_id/style_options` (theme + scheme), `apartments.ring_seconds`, `apartments.greeting_url`, `memberships.role` gains `keyholder`, `join_requests` table, phone-number auth (Supabase phone OTP).
