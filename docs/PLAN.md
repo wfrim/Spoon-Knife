@@ -401,3 +401,23 @@ Three circles: **people** (individuals), **homes** (households), and **the publi
   - `blocks` (blocker home/user → blocked home/user)
   - `apartments.who_can_ring`
   - `users.who_can_call`
+
+### Oct 8 (later) — onboarding polish and neighbor controls
+
+- **Onboarding palette "Pop"** (house style before you have a home), replacing the burnt orange:
+  - primary cobalt #3B5BFD
+  - sunny yellow #FFD43B
+  - pink #E23C7A
+  - mint #0E9F6E
+  - warm white ground #FFF8F1
+  - ink #14172B
+- **Fixed button footer** on every onboarding step: primary button 56 pt, then a reserved 44 pt slot (secondary link, short note, or empty), 28 pt from the bottom. The primary is always in the same spot.
+- **Home step:** address search with suggestions plus "use my location" on the map. A note under the button says location permission comes next.
+- **Neighbors:**
+  - Contact links count both ways (confirmed).
+  - New contact-made neighbors are highlighted (NEW badge, banner) until seen.
+  - Any home can **Remove** a neighbor. A removed home is never re-added from contacts, but can still ask.
+- **Keyholders:**
+  - The creator is a Keyholder, and a home can have any number of them.
+  - Any roommate can accept a neighbor request.
+  - Keyholders choose who can ring the home (Neighbors / Anyone / Nobody).
