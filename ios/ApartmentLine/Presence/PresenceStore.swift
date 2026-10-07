@@ -133,8 +133,20 @@ final class PresenceStore: ObservableObject {
 
     // MARK: Device registration
 
+    /// Saves this phone's PushKit token so calls can ring it. Nil clears it.
+    func setVoipToken(_ token: String?) async {
+        do {
+            let deviceID = try await ensureDevice()
+            try await SupabaseClient.shared.update("devices", where: "id=eq.\(deviceID.uuidString)",
+                                                   VoipTokenPatch(voipToken: token))
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
     /// One devices row per install, re-created if the auth user changes.
-    private func ensureDevice() async throws -> UUID {
+    func ensureDevice() async throws -> UUID {
         let session = try await SupabaseClient.shared.ensureSession()
         let defaults = UserDefaults.standard
         if let raw = defaults.string(forKey: Self.deviceIDKey), let id = UUID(uuidString: raw),
@@ -162,6 +174,17 @@ final class PresenceStore: ObservableObject {
 }
 
 // MARK: - RPC payloads
+
+private struct VoipTokenPatch: Encodable {
+    let voipToken: String?
+
+    enum CodingKeys: String, CodingKey { case voipToken = "voip_token" }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(voipToken, forKey: .voipToken)  // explicit null clears it
+    }
+}
 
 private struct ReportParams: Encodable {
     let deviceID: UUID

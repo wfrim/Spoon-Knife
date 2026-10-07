@@ -10,6 +10,7 @@ struct ApartmentLineApp: App {
         WindowGroup {
             PresenceSpikeView()
                 .environmentObject(PresenceStore.shared)
+                .environmentObject(CallManager.shared)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -28,6 +29,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         // UI; starting the store re-attaches to CLMonitor so the event is delivered.
         Heartbeat.register()
         PresenceStore.shared.start()
+        // VoIP pushes can relaunch the app for an incoming call; PushKit must be
+        // registered before this returns so the push is delivered.
+        CallManager.shared.start()
         Heartbeat.schedule()
         return true
     }

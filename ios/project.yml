@@ -7,6 +7,11 @@ options:
     iOS: "17.2"   # push-started Live Activities (plan B5)
   createIntermediateGroups: true
 
+packages:
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift
+    from: 2.5.0
+
 targets:
   ApartmentLine:
     type: application
@@ -14,6 +19,12 @@ targets:
     scheme: {}
     sources:
       - path: ApartmentLine
+    dependencies:
+      - package: LiveKit
+    entitlements:
+      path: ApartmentLine/ApartmentLine.entitlements
+      properties:
+        aps-environment: development
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
@@ -35,7 +46,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocationWhenInUseUsageDescription: Location lets your apartment ring you when you're home.
         NSLocationAlwaysAndWhenInUseUsageDescription: Apartment Line checks whether you're near home, even when the app is closed, so calls to your apartment only ring you when you're there. It only reports home or away, never where you are.
-        UIBackgroundModes: [fetch]
+        UIBackgroundModes: [fetch, voip, audio]
+        NSMicrophoneUsageDescription: Your microphone is used during calls and when you record a voicemail or greeting.
         BGTaskSchedulerPermittedIdentifiers: [app.apartmentline.heartbeat]
         SupabaseURL: $(SUPABASE_URL)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)

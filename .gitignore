@@ -13,3 +13,4 @@ DerivedData/
 supabase/.branches
 supabase/.temp
 .env
+ios/ApartmentLine/ApartmentLine.entitlements

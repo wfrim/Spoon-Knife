@@ -93,6 +93,11 @@ actor SupabaseClient {
         try await rest(method: "POST", path: "rest/v1/rpc/\(name)", body: params, single: true)
     }
 
+    /// POST /rest/v1/rpc/<name> for set-returning functions (decodes an array).
+    func rpcList<Params: Encodable, Response: Decodable>(_ name: String, _ params: Params) async throws -> Response {
+        try await rest(method: "POST", path: "rest/v1/rpc/\(name)", body: params, single: false)
+    }
+
     /// Inserts one row and returns it.
     func insert<Row: Encodable, Response: Decodable>(into table: String, _ row: Row) async throws -> Response {
         try await rest(method: "POST", path: "rest/v1/\(table)", body: row, single: true,
@@ -106,6 +111,40 @@ actor SupabaseClient {
     }
 
     private struct EmptyRow: Decodable {}
+
+    /// GET /rest/v1/<path> as the signed-in user (RLS applies).
+    func select<Response: Decodable>(_ path: String) async throws -> Response {
+        let token = try await ensureSession().accessToken
+        var request = URLRequest(url: URL(string: "rest/v1/\(path)", relativeTo: AppConfig.supabaseURL)!)
+        request.httpMethod = "GET"
+        return try await send(request, token: token)
+    }
+
+    /// POST /functions/v1/<name> with the user's session.
+    func invoke<Body: Encodable, Response: Decodable>(_ function: String, _ body: Body) async throws -> Response {
+        let token = try await ensureSession().accessToken
+        var request = URLRequest(url: URL(string: "functions/v1/\(function)", relativeTo: AppConfig.supabaseURL)!)
+        request.httpMethod = "POST"
+        request.httpBody = try Self.encoder.encode(body)
+        return try await send(request, token: token)
+    }
+
+    /// Uploads a file to Supabase Storage and returns its object path.
+    func upload(bucket: String, path: String, file: URL, contentType: String) async throws -> String {
+        let token = try await ensureSession().accessToken
+        var request = URLRequest(url: URL(string: "storage/v1/object/\(bucket)/\(path)", relativeTo: AppConfig.supabaseURL)!)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 60
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        request.setValue(AppConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await URLSession.shared.upload(for: request, fromFile: file)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            throw ClientError.http(status: status, body: String(decoding: data, as: UTF8.self))
+        }
+        return path
+    }
 
     private func rest<Body: Encodable, Response: Decodable>(
         method: String, path: String, body: Body, single: Bool, headers: [String: String] = [:]

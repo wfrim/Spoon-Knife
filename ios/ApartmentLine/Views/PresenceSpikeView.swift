@@ -4,6 +4,9 @@ import SwiftUI
 /// and log ground-truth spot checks for the gate report.
 struct PresenceSpikeView: View {
     @EnvironmentObject private var store: PresenceStore
+    @EnvironmentObject private var calls: CallManager
+    @State private var callHandle = ""
+    @State private var callLookupError: String?
     @StateObject private var permission = LocationPermission()
     @AppStorage("tester.name") private var testerName = ""
     @State private var showingHomeSetup = false
@@ -17,6 +20,7 @@ struct PresenceSpikeView: View {
                 spotCheckSection
                 overrideSection
                 setupSection
+                callSection
                 historySection
             }
             .navigationTitle("Apartment Line")
@@ -111,6 +115,56 @@ struct PresenceSpikeView: View {
 
             TextField("Your name (for the test report)", text: $testerName)
                 .onSubmit { Task { await store.setTesterName(testerName) } }
+        }
+    }
+
+    /// Phase 1 preview: ring a home by its handle, end to end.
+    private var callSection: some View {
+        Section {
+            TextField("Home handle, e.g. theburrow", text: $callHandle)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            HStack {
+                Button("Call") { Task { await callHome() } }
+                    .disabled(callHandle.trimmingCharacters(in: .whitespaces).isEmpty || calls.isBusy)
+                Spacer()
+                if calls.isBusy { Button("Hang up", role: .destructive) { calls.hangUp() } }
+            }
+            LabeledContent("Call", value: phaseLabel)
+            if let error = callLookupError ?? calls.lastError {
+                Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(.red)
+            }
+        } header: {
+            Text("Calls (preview)")
+        } footer: {
+            Text("Rings whoever is home there. After 30 seconds you can leave a message; hanging up sends it.")
+        }
+    }
+
+    private var phaseLabel: String {
+        switch calls.phase {
+        case .idle: return "—"
+        case .ringing: return "Ringing…"
+        case .connected: return "Connected"
+        case .leavingMessage: return "Recording a message"
+        case .ended(let why): return why
+        }
+    }
+
+    private func callHome() async {
+        struct Home: Decodable { let id: UUID; let name: String }
+        let handle = callHandle.trimmingCharacters(in: .whitespaces).lowercased().replacingOccurrences(of: "@", with: "")
+        do {
+            let homes: [Home] = try await SupabaseClient.shared.select(
+                "apartments?handle=eq.\(handle)&select=id,name")
+            guard let home = homes.first else {
+                callLookupError = "No home called @\(handle)"
+                return
+            }
+            callLookupError = nil
+            calls.call(home: home.id, named: home.name)
+        } catch {
+            callLookupError = error.localizedDescription
         }
     }
 
