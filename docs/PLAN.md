@@ -319,7 +319,8 @@ Rules:
 - Counts only include people who share status ("2 home", not "2 of 3 home"), so a hidden or unknown roommate isn't implied to be away.
 - Replace the green dot (reads as "online/available") with a clearer "home" treatment; to be designed.
 - **Apartment setting — what visitors see:** names of who's home / just a count / nothing. Default: just a count.
-- **Open:** a roommate who never grants location — ring them on every call (opt-in "Ring me for every call") or never?
+- A roommate who never grants location can opt in to **"Ring me for every call"** (decided Oct 7); otherwise they're never rung.
+- Status shows only positively (a "home" badge); "away" is never displayed.
 
 ### Calling as an apartment (backlog)
 
@@ -333,7 +334,7 @@ When calling, choose **Call as yourself** (default) or **Call as The Burrow**. C
 ### Schema changes these imply (not built yet)
 
 - `apartments.style_id`, `apartments.style_options`, `apartments.visitor_presence` (`names` | `count` | `none`)
-- `memberships.ring_mode` (`available` | `snoozed` | `off`) + `snoozed_until`, replacing `ring_enabled`; `memberships.share_status`
+- `memberships.ring_mode` (`available` | `snoozed` | `off`) + `snoozed_until`, replacing `ring_enabled`; `memberships.share_status`; `memberships.ring_always` (no-location opt-in)
 - `apartment_roster()` respects `share_status` and `visitor_presence`; drop `presence_at` from its output
 - `calls.from_apartment_id`
 - `message_listens` already supports the answering machine's "new" count
