@@ -369,3 +369,13 @@ Design reference: canvas pages "v2 · Onboarding", "v2 · App", "v2 · Calling (
 **Moving out.** You → "Move out of <home>" → confirm (stop ringing; voicemails stay with the home; if you're the last Keyholder you must pass the keys) → create a new home, join one, or use an invite.
 
 **Schema additions implied:** `apartments.style_id/style_options` (theme + scheme), `apartments.ring_seconds`, `apartments.greeting_url`, `memberships.role` gains `keyholder`, `join_requests` table, phone-number auth (Supabase phone OTP).
+
+### Oct 8 (later) — revisions
+
+- **The whole app wears your home's theme.** Every tab, setting and the tab bar use your home's style and colors. Only another home's screens (its profile, calling it, leaving it a voicemail) look different. Onboarding uses Simple until you have a home. *(Supersedes "the app is the hallway" above.)*
+- **Greeting is optional at setup** (last step of creating a home; skip plays a default "You've reached The Burrow…"). Editable any time in home settings. When a roommate moves in, the home tab prompts everyone to re-record it together.
+- **Call from: Just me / <your home>.** A two-option picker sits above the Call button on every home profile, with a line saying what the other side will see and who on your side can join; the button label follows ("Call" / "Call as The Burrow").
+- **Neighborhood replaces the contact book** (centre tab). Homes can ask to be **neighbors**; the other home accepts. It shows incoming neighbor requests, **Favorites (private to your household)**, your Neighbors list, and search with "Be neighbors?".
+  - Open question: should only neighbors be able to ring you (others go straight to voicemail or a request)? This would answer the spam concern from decision 3.
+- **Home settings are their own screens** (style & colors, home area, invite, greeting), not the onboarding flow.
+- Schema implied: `neighbors (home_a, home_b, status, requested_by)`, `favorites (home_id, favorite_home_id)`, `calls.from_apartment_id` (already planned).
