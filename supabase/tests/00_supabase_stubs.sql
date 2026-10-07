@@ -9,8 +9,13 @@ create role service_role nologin bypassrls;
 create schema auth;
 create table auth.users (
   id                 uuid primary key,
+  phone              text,                 -- set by phone OTP sign-in, digits only
   raw_user_meta_data jsonb not null default '{}'
 );
+
+-- Supabase installs extensions such as pgcrypto into this schema.
+create schema extensions;
+create extension pgcrypto with schema extensions;
 
 -- Supabase's auth.uid(): the JWT "sub" claim PostgREST puts in request.jwt.claims.
 create function auth.uid() returns uuid
