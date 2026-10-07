@@ -278,3 +278,62 @@ The POC needs a Mac with Xcode, a paid Apple Developer account, and 3–4 real i
 3. For the POC, anyone can call an apartment; permissions (connecting apartments) come later. Original question: who can call an apartment: anyone with the app and the number, or only approved contacts? Open dialing invites spam.
 4. Addressing: decided — a profile with a fun name and handle, no numbers.
 5. Setup: decided — one roommate creates the profile and invites the rest; zero setup isn't required.
+
+## Product decisions (Oct 7)
+
+Design reference: the "Apartment Line App Design" canvas (App flows + Profile explorations pages).
+
+### Apartment styles
+
+**Decision:** each apartment picks a style for its "phone"; the rest of the app stays in one base style. Launch with three styles: **Simple** (the current design, default), **Sticker Book** and **Retro Rotary**. Any roommate can change the apartment's style.
+
+Where a style shows:
+
+| Surface | Styled? | Notes |
+| --- | --- | --- |
+| Apartment profile, outgoing "Calling…" screen, leave-a-message screen, the apartment's own Messages/answering machine | Fully | These are the apartment's "phone" |
+| Ongoing-call Live Activity (Lock Screen card, Dynamic Island) | Colors, fonts, small art | Live Activities are SwiftUI widgets: no custom animation, tap opens the app |
+| Incoming call screen | No | Drawn by Apple (CallKit). We control the caller text ("The Burrow — Alex"), the app icon and the ringtone, so each style can bring its own ring (e.g. an old bell for Rotary) |
+| Standard notifications (missed call, new message, join invites) | No | Base style; text and app icon only |
+| Tabs, search, Recents, settings | No | Base style |
+
+**Built to extend.** A style is data plus optional views, never a fork of a screen:
+
+- *Tokens*: colors, typography, corner radii, borders/shadows, motion, ringtone.
+- *Slots*: named pieces of the apartment screens (profile hero, roster, call button, calling screen, recorder, answering machine). Simple implements every slot; another style overrides only the slots it wants (Rotary overrides the roster and call button with the dial) and inherits the rest.
+- *Registry*: styles are registered by id. Apartments store `style_id` plus `style_options` (e.g. accent color). An id the installed app doesn't know falls back to Simple, so new styles can ship without breaking older builds. A server-side `styles` list can gate which styles are offered.
+- *Rotary ring animation*: tapping Ring spins the dial and lets it click back; home roommates' holes pulse while ringing; the answerer's hole lights up.
+
+### Home status and availability
+
+Two separate settings per person, replacing Automatic/Home/Away + "Don't ring me":
+
+1. **Ring me?**: *Available* (ring me when I'm home), *Snooze* (1 hour / until tomorrow), *Off* (never ring me).
+2. **Show my status?**: whether roommates (and, per the apartment's setting, visitors) see that you're home.
+
+Rules:
+
+- Hiding your status never stops you being rung. The server still uses your location privately to decide ringing; it just isn't displayed.
+- Unknown status is never shown as "unknown". Someone who hasn't shared status appears by name only, with no indicator.
+- No "since 6:12 PM" times anywhere.
+- Counts only include people who share status ("2 home", not "2 of 3 home"), so a hidden or unknown roommate isn't implied to be away.
+- Replace the green dot (reads as "online/available") with a clearer "home" treatment; to be designed.
+- **Apartment setting — what visitors see:** names of who's home / just a count / nothing. Default: just a count.
+- **Open:** a roommate who never grants location — ring them on every call (opt-in "Ring me for every call") or never?
+
+### Calling as an apartment (backlog)
+
+When calling, choose **Call as yourself** (default) or **Call as The Burrow**. Calling as the apartment gives your home roommates a "Maya is calling Casa Noodle — join" card; their phones do not ring. The receiving side sees "The Burrow is calling (Maya)". Uses the ongoing-call Live Activity, with a time-sensitive notification as the fallback. The voice room already supports many participants; new work is `calls.from_apartment_id`, join cards on the caller's side, and the incoming label. After Phase 3.
+
+### Answering machine and weekly recap (backlog)
+
+- Messages tab becomes the apartment's answering machine: "You have 5 new messages", one Play that plays them back to back on speaker. Each is introduced aloud ("Alex, Tuesday 6:02 PM") by on-device speech. Skip, replay and save controls.
+- Weekly recap: a Sunday notification ("This week at The Burrow: 5 messages, 12 calls — play them all") that opens the answering machine. A shareable recap card is a later follow-up.
+
+### Schema changes these imply (not built yet)
+
+- `apartments.style_id`, `apartments.style_options`, `apartments.visitor_presence` (`names` | `count` | `none`)
+- `memberships.ring_mode` (`available` | `snoozed` | `off`) + `snoozed_until`, replacing `ring_enabled`; `memberships.share_status`
+- `apartment_roster()` respects `share_status` and `visitor_presence`; drop `presence_at` from its output
+- `calls.from_apartment_id`
+- `message_listens` already supports the answering machine's "new" count
