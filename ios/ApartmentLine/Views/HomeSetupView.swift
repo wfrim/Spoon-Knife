@@ -14,7 +14,7 @@ struct HomeSetupView: View {
     init(initial: HomeLocation?, onSave: @escaping (HomeLocation) -> Void) {
         self.onSave = onSave
         _center = State(initialValue: initial?.coordinate)
-        _radius = State(initialValue: initial?.radius ?? 100)
+        _radius = State(initialValue: initial?.radius ?? 200)
         if let initial {
             _position = State(initialValue: .camera(MapCamera(centerCoordinate: initial.coordinate, distance: 1200)))
         } else {
@@ -54,7 +54,7 @@ struct HomeSetupView: View {
                         Text("Radius: \(Int(radius)) m")
                         Slider(value: $radius, in: 100...1000, step: 25)
                     }
-                    Text("Smaller circles fire later and less reliably; around 100 m is the practical floor. Anything inside the circle (the café downstairs) counts as home.")
+                    Text("200 m is the sweet spot: indoor GPS drifts, so tighter circles miss you at home. Anything inside the circle (the café downstairs) counts as home.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .padding()

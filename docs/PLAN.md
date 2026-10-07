@@ -26,7 +26,7 @@ Five flows cover the POC: create the apartment, join it, call it, leave it a mes
 
 1. Sign in with Apple.
 2. Create the apartment: a fun name ("The Burrow"), a unique handle (@theburrow), a photo or emoji, and a short status line.
-3. Set home: use current location or drop a pin; the app draws the geofence (default 100 m, adjustable).
+3. Set home: use current location or drop a pin; the app draws the geofence (default 200 m, adjustable 100–500 m).
 4. Invite roommates with a link or QR code.
 
 **2. Join (each roommate)**
@@ -421,3 +421,47 @@ Three circles: **people** (individuals), **homes** (households), and **the publi
   - The creator is a Keyholder, and a home can have any number of them.
   - Any roommate can accept a neighbor request.
   - Keyholders choose who can ring the home (Neighbors / Anyone / Nobody).
+
+### Oct 9 — themed onboarding, roommates, cities
+
+- **Style step previews live.** `Pick your home's style` starts on **Simple · Cobalt**. Picking a theme or color re-skins the whole screen (background, type, cards, buttons), not a thumbnail.
+- **After "Use this style", onboarding wears the chosen theme.** Home area, Location, Roommates, Invite and Greeting all render from the same theme tokens the app uses. Everything before that (welcome, phone, about you, contacts, name) stays in the house "Pop" style, because you don't have a home yet.
+- **Theme tokens** (one set per theme × color scheme; screens never hard-code colors). Every screen reads the same names, so a new theme is a new token set, not new screens:
+
+  | Group | Tokens |
+  |---|---|
+  | Page | bg, text, muted |
+  | Type | font, head, headStyle, headWeight |
+  | Cards | cardBg, cardText, cardMuted, cardBorder, cardRadius, cardShadow |
+  | Inputs | inBorder, inRadius |
+  | Buttons | btnBg, btnFg, btnBorder, btnRadius, btnShadow |
+  | Accents | accent, accentFg, soft, strong |
+  | Chips | chip on / off |
+  | Map | mapRing, mapFill, pin |
+  | Avatars | avatars[3] |
+  | Flourish | tilt (Sticker stickers sit crooked) |
+
+- **New step: "How many roommates do you have?"** (step 5 of 6). It uses a stepper from 1 to 7 (8 people per home), with an "It's just me for now" link. The answer sets how many open spots the Invite step shows ("1 of 2 invited").
+- **Invite is search, not a list.** The flow is "Search your contacts", "Add a number" or "Share link". No contacts are shown until you type, and we only look up names you search for. The same pattern applies in Home → Invite.
+- **Greeting example** uses whatever the home is called: "Hi, you've reached {Home}! We can't get to the phone right now. Leave a message and we'll call you back."
+- **Geofence default is 200 m** (slider 100–500, step 25, "recommended" at 200). Indoor GPS drifts 30–65 m, so 100 m missed people on the couch. 150 m is the floor we suggest.
+- **City on every home:**
+  - It's filled in from the address you pick or your current location (reverse geocode → locality) and can be edited.
+  - It's shown on the home profile and in Neighborhood ("Casa Noodle · New York"), including people's rows ("Alex · Casa Noodle · New York").
+  - The address itself is never shown.
+  - Schema: `apartments.city`, plus `create_apartment(p_city)`.
+- **Favorites are capped at 3 per home.** Favoriting a 4th asks you to unfavorite one first.
+- **Move out** wears the home's theme while you're still a member. Once you've moved out you have no home, so the "where to next?" screen drops back to the house style.
+
+#### Address search and auto-locate (Apple APIs, no key needed)
+
+| Need | API | Notes |
+|---|---|---|
+| Type-ahead suggestions | `MKLocalSearchCompleter` (`resultTypes = .address`, `region` = around the user) | Returns title/subtitle only. Debounced; free, rate-limited per device. |
+| Turn a suggestion into a coordinate | `MKLocalSearch(request: .init(completion:))` | Gives `MKMapItem` → `placemark.coordinate`, `locality` (city), `administrativeArea`. |
+| "Use my location" | `CLLocationManager.requestLocation()` (or `CLLocationUpdate.liveUpdates()` first value) | Needs **When In Use** only; Always is asked on the next step for the geofence. |
+| Coordinate → address + city | `CLGeocoder.reverseGeocodeLocation` (iOS 26: `MKReverseGeocodingRequest`) | One request at a time; cache. City = `locality` (fall back to `subLocality` / `administrativeArea`). |
+| Map + circle | SwiftUI `Map` with `MapCircle`, `Annotation` | Already in `HomeSetupView`. |
+
+- **Info.plist:** `NSLocationWhenInUseUsageDescription`, plus `NSLocationAlwaysAndWhenInUseUsageDescription`. No MapKit entitlement or API key is required.
+- **Storage:** we store `home_lat`, `home_lng`, `radius_m` and `city`. We don't store the street address; it's only used to place the pin.

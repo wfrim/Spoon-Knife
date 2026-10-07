@@ -35,7 +35,10 @@ create table public.apartments (
   status_line text check (length(status_line) <= 140),
   home_lat    double precision not null check (home_lat between -90 and 90),
   home_lng    double precision not null check (home_lng between -180 and 180),
-  radius_m    integer not null default 100 check (radius_m between 50 and 2000),
+  -- 200 m default: indoor GPS drifts 30–65 m, so tighter circles miss people at home.
+  radius_m    integer not null default 200 check (radius_m between 50 and 2000),
+  -- Shown on the profile and in Neighborhood ("Casa Noodle · New York"). Never the address.
+  city        text check (length(city) between 1 and 60),
   created_by  uuid references public.users (id) on delete set null,
   created_at  timestamptz not null default now()
 );
@@ -284,9 +287,10 @@ create function public.create_apartment(
   p_name        text,
   p_home_lat    double precision,
   p_home_lng    double precision,
-  p_radius_m    integer default 100,
+  p_radius_m    integer default 200,
   p_status_line text default null,
-  p_emoji       text default null
+  p_emoji       text default null,
+  p_city        text default null
 )
 returns public.apartments
 language plpgsql
@@ -300,9 +304,9 @@ begin
     raise exception 'not signed in' using errcode = '42501';
   end if;
 
-  insert into public.apartments (handle, name, home_lat, home_lng, radius_m, status_line, emoji, created_by)
+  insert into public.apartments (handle, name, home_lat, home_lng, radius_m, status_line, emoji, city, created_by)
   values (lower(trim(leading '@' from p_handle)), trim(p_name), p_home_lat, p_home_lng,
-          coalesce(p_radius_m, 100), p_status_line, p_emoji, auth.uid())
+          coalesce(p_radius_m, 200), p_status_line, p_emoji, nullif(trim(p_city), ''), auth.uid())
   returning * into a;
 
   insert into public.memberships (user_id, apartment_id, role) values (auth.uid(), a.id, 'owner');
@@ -501,7 +505,7 @@ grant select (id, display_name, photo_url, created_at) on public.users to authen
 grant update (display_name, photo_url, phone)         on public.users to authenticated;
 
 grant select on public.apartments to authenticated;
-grant update (name, photo_url, emoji, status_line, home_lat, home_lng, radius_m)
+grant update (name, photo_url, emoji, status_line, home_lat, home_lng, radius_m, city)
   on public.apartments to authenticated;
 
 grant select, delete         on public.memberships to authenticated;
@@ -529,7 +533,7 @@ grant execute on function public.effective_presence(public.presence_state, times
 grant execute on function public.is_member(uuid)                                         to authenticated;
 grant execute on function public.report_presence(uuid, public.presence_state, public.presence_source, timestamptz, jsonb) to authenticated;
 grant execute on function public.record_presence_check(uuid, public.presence_state, text) to authenticated;
-grant execute on function public.create_apartment(text, text, double precision, double precision, integer, text, text) to authenticated;
+grant execute on function public.create_apartment(text, text, double precision, double precision, integer, text, text, text) to authenticated;
 grant execute on function public.create_invite(uuid)                                     to authenticated;
 grant execute on function public.accept_invite(text)                                     to authenticated;
 grant execute on function public.apartment_roster(uuid)                                  to authenticated;

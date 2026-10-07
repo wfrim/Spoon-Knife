@@ -26,7 +26,7 @@ struct PresenceReport: Codable, Identifiable, Equatable {
 struct HomeLocation: Codable, Equatable {
     var latitude: Double
     var longitude: Double
-    var radius: Double = 100
+    var radius: Double = 200
 
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)

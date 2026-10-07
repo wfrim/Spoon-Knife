@@ -78,8 +78,8 @@ end $$;
 do $$
 declare a public.apartments; i public.invites;
 begin
-  a := public.create_apartment('@TheBurrow', ' The Burrow ', 40.7, -74.0);
-  assert a.handle = 'theburrow' and a.name = 'The Burrow' and a.radius_m = 100;
+  a := public.create_apartment('@TheBurrow', ' The Burrow ', 40.7, -74.0, p_city => ' Oakland ');
+  assert a.handle = 'theburrow' and a.name = 'The Burrow' and a.radius_m = 200 and a.city = 'Oakland';
   assert (select role from public.memberships where apartment_id = a.id) = 'owner';
   i := public.create_invite(a.id);
   perform set_config('test.apt', a.id::text, false);
