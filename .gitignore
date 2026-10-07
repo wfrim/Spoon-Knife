@@ -1,0 +1,15 @@
+.DS_Store
+
+# iOS — the Xcode project is generated from ios/project.yml
+ios/*.xcodeproj
+ios/*.xcworkspace
+ios/ApartmentLine/Info.plist
+ios/Config/Secrets.xcconfig
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Supabase CLI local state
+supabase/.branches
+supabase/.temp
+.env
