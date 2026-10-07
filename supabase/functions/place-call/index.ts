@@ -10,4 +10,5 @@ Deno.serve(makeHandler({
   db: new Db(env("SUPABASE_URL")!, env("SUPABASE_ANON_KEY")!, env("SUPABASE_SERVICE_ROLE_KEY")!),
   apns: apnsConfig ? new Apns(apnsConfig) : null,
   livekit: liveKitConfigFromEnv(env),
+  webTestPhones: env("WEB_TEST_PHONES") === "on",
 }));

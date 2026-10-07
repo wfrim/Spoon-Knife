@@ -11,7 +11,7 @@ const call = {
 };
 const livekit = { url: "wss://lk.test", apiKey: "key", apiSecret: "secret" };
 
-async function setup(opts: { targets: string[]; startError?: Response }) {
+async function setup(opts: { targets: string[]; startError?: Response; webTestPhones?: boolean }) {
   const { pem } = await testP8();
   const db = fakeFetch({
     [`${SB}/rest/v1/rpc/start_call`]: () => opts.startError ?? ok(call),
@@ -29,6 +29,7 @@ async function setup(opts: { targets: string[]; startError?: Response }) {
     db: new Db(`https://${SB}`, "anon", "service", db.fn),
     apns: new Apns({ keyId: "K", teamId: "T", privateKey: pem, bundleId: "app.test", production: false }, push.fn),
     livekit,
+    webTestPhones: opts.webTestPhones,
   });
   const send = (body: unknown, jwt: string | null = userJwt("kim")) =>
     handler(new Request("http://fn/place-call", {
@@ -92,4 +93,15 @@ Deno.test("database refusals become 403 with the hint for the app", async () => 
 Deno.test("requires a signed-in caller and a JSON body", async () => {
   const { send } = await setup({ targets: [] });
   assertEquals((await send({ apartment_id: "apt-1" }, null)).status, 401);
+});
+
+Deno.test("browser test phones count as rung without a push, only when enabled", async () => {
+  const on = await setup({ targets: ["web:abc", "live"], webTestPhones: true });
+  const out = await (await on.send({ apartment_id: "apt-1" })).json();
+  assertEquals([out.rang, out.call.state], [2, "ringing"]);
+  assertEquals(on.push.calls.map((c) => c.url.pathname), ["/3/device/live"], "no APNs push to a web token");
+
+  const off = await setup({ targets: ["web:abc"] });
+  const out2 = await (await off.send({ apartment_id: "apt-1" })).json();
+  assertEquals([out2.rang, out2.call.state], [0, "voicemail"], "disabled: a web token is nobody");
 });

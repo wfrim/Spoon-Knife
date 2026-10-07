@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apartment Line · Test Phone</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<style>
+  :root { --bg: #FFF8F1; --ink: #14172B; --muted: #5B6075; --line: #E4DCD2; --blue: #3B5BFD; --green: #0E9F6E; --red: #B91C1C; --card: #FFFFFF; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -.02em; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; }
+  input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #D5D8E1; border-radius: 10px; font: inherit; background: #fff; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button { height: 44px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--blue); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.secondary { background: #F1F2F6; color: var(--ink); }
+  button.green { background: var(--green); }
+  button.red { background: var(--red); }
+  button:disabled { opacity: .45; cursor: default; }
+  .status { font-weight: 600; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .code { font: 600 20px ui-monospace, monospace; letter-spacing: .05em; }
+  #incoming { display: none; border: 2px solid var(--green); }
+  #incoming.ringing { display: block; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(14, 159, 110, .15); } }
+  #log { font: 12px ui-monospace, monospace; white-space: pre-wrap; max-height: 220px; overflow: auto; color: var(--muted); margin: 0; }
+  @media (prefers-reduced-motion: reduce) { #incoming.ringing { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Test Phone</h1>
+  <p class="lead">A second roommate in your browser, so one iPhone is enough to test calls. Keep this tab open while testing.</p>
+
+  <section>
+    <h2>1. Connect to your Supabase project</h2>
+    <label for="url">Project URL</label>
+    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+    <label for="anon">anon public key</label>
+    <input id="anon" placeholder="eyJ…" autocomplete="off">
+    <label for="name">Your test name (shown on the iPhone when you call)</label>
+    <input id="name" placeholder="Browser Bea">
+    <div class="row">
+      <button id="signin">Sign in</button>
+      <button id="signout" class="secondary">Start over</button>
+    </div>
+    <p class="muted" id="who">Not signed in.</p>
+  </section>
+
+  <section>
+    <h2>2. Share a home with your iPhone</h2>
+    <div class="row">
+      <button id="create">Create a test home</button>
+    </div>
+    <label for="joinCode">…or join one with an invite code</label>
+    <div class="row" style="margin-top: 0">
+      <input id="joinCode" style="flex: 1; min-width: 160px" placeholder="invite code">
+      <button id="join" class="secondary">Join</button>
+    </div>
+    <p class="muted" id="home">No home yet.</p>
+  </section>
+
+  <section id="incoming" aria-live="assertive">
+    <h2 id="incomingTitle">Incoming call</h2>
+    <div class="row">
+      <button id="answer" class="green">Answer</button>
+      <button id="dismiss" class="secondary">Ignore</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Call</h2>
+    <p class="muted">Calling your own home rings the other roommates who are home, so this rings your iPhone.</p>
+    <div class="row">
+      <button id="call">Call the home</button>
+      <button id="mute" class="secondary" disabled>Mute</button>
+      <button id="hangup" class="red" disabled>Hang up</button>
+    </div>
+    <p class="status" id="callStatus">Idle.</p>
+  </section>
+
+  <section>
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem('tp.' + k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem('tp.' + k, JSON.stringify(v)); } catch {} },
+    clear() { try { Object.keys(localStorage).filter((k) => k.startsWith('tp.')).forEach((k) => localStorage.removeItem(k)); } catch {} },
+  };
+  const log = (...parts) => {
+    const line = new Date().toLocaleTimeString() + '  ' + parts.map((p) => typeof p === 'string' ? p : JSON.stringify(p)).join(' ');
+    $('log').textContent = line + '\n' + $('log').textContent;
+  };
+
+  const state = {
+    session: store.get('session'), home: store.get('home'), device: store.get('device'),
+    room: null, callId: null, seen: new Set(), muted: false, ringTimer: null,
+  };
+  $('url').value = store.get('url') || '';
+  $('anon').value = store.get('anon') || '';
+  $('name').value = store.get('name') || '';
+
+  const base = () => $('url').value.trim().replace(/\/$/, '');
+  const anon = () => $('anon').value.trim();
+
+  // ── Supabase plumbing (plain fetch, no SDK) ─────────────────────────────
+  async function http(path, { method = 'GET', body, auth = true, headers = {} } = {}) {
+    const token = auth ? await accessToken() : anon();
+    const res = await fetch(base() + path, {
+      method,
+      headers: { apikey: anon(), authorization: 'Bearer ' + token, 'content-type': 'application/json', ...headers },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) throw new Error((data && (data.message || data.error || data.msg)) || res.status + ' ' + text);
+    return data;
+  }
+  const rpc = (name, params) => http('/rest/v1/rpc/' + name, { method: 'POST', body: params });
+  const fn = (name, body) => http('/functions/v1/' + name, { method: 'POST', body });
+
+  async function accessToken() {
+    const s = state.session;
+    if (!s) throw new Error('Sign in first');
+    if (s.expires_at * 1000 - Date.now() > 60_000) return s.access_token;
+    const fresh = await http('/auth/v1/token?grant_type=refresh_token', { method: 'POST', auth: false, body: { refresh_token: s.refresh_token } });
+    saveSession(fresh);
+    return fresh.access_token;
+  }
+  function saveSession(s) {
+    state.session = { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at || Math.floor(Date.now() / 1000) + s.expires_in, user_id: s.user.id };
+    store.set('session', state.session);
+  }
+
+  // ── 1. Sign in ──────────────────────────────────────────────────────────
+  async function signIn() {
+    store.set('url', base()); store.set('anon', anon()); store.set('name', $('name').value.trim());
+    if (!state.session) {
+      saveSession(await http('/auth/v1/signup', { method: 'POST', auth: false, body: {} }));
+      log('signed in anonymously');
+    }
+    const name = $('name').value.trim() || 'Browser test phone';
+    await http('/rest/v1/users?id=eq.' + state.session.user_id, { method: 'PATCH', body: { display_name: name }, headers: { prefer: 'return=minimal' } });
+    await ensureDevice();
+    render();
+  }
+
+  // A device row whose "token" marks it as a browser test phone (rung by
+  // polling, not by push; needs WEB_TEST_PHONES=on on place-call).
+  async function ensureDevice() {
+    if (state.device && state.device.user === state.session.user_id) return;
+    const [row] = await http('/rest/v1/devices', {
+      method: 'POST', body: { name: 'Browser test phone', voip_token: 'web:' + crypto.randomUUID() },
+      headers: { prefer: 'return=representation' },
+    });
+    state.device = { id: row.id, user: state.session.user_id };
+    store.set('device', state.device);
+    log('registered this browser as a phone');
+  }
+
+  // "Home" for the server, refreshed every 30 min (presence expires after 24 h).
+  async function reportHome() {
+    if (!state.device || !state.home) return;
+    try { await rpc('report_presence', { p_device_id: state.device.id, p_state: 'home', p_source: 'manual' }); }
+    catch (e) { log('presence failed:', e.message); }
+  }
+
+  // ── 2. Home ─────────────────────────────────────────────────────────────
+  async function createHome() {
+    const suffix = Math.random().toString(36).slice(2, 7);
+    const apt = await rpc('create_apartment', { p_handle: 'test' + suffix, p_name: 'Test Home ' + suffix.toUpperCase(), p_home_lat: 0, p_home_lng: 0, p_city: 'Testville' });
+    const invite = await rpc('create_invite', { p_apartment_id: apt.id });
+    setHome({ id: apt.id, name: apt.name, handle: apt.handle, code: invite.code });
+    log('created', apt.name, 'invite code', invite.code);
+  }
+  async function joinHome() {
+    const code = $('joinCode').value.trim();
+    const m = await rpc('accept_invite', { p_code: code });
+    const [apt] = await http('/rest/v1/apartments?id=eq.' + m.apartment_id + '&select=id,name,handle');
+    setHome({ ...apt, code });
+    log('joined', apt.name);
+  }
+  function setHome(home) {
+    state.home = home; store.set('home', home);
+    reportHome(); render();
+  }
+
+  // ── Incoming: watch for ringing calls to our home ───────────────────────
+  async function watch() {
+    if (!state.session || !state.home || state.callId) return;
+    try {
+      const calls = await http('/rest/v1/calls?apartment_id=eq.' + state.home.id + '&state=eq.ringing&caller_id=neq.' + state.session.user_id + '&select=id,caller_id,ring_until');
+      const call = calls.find((c) => !state.seen.has(c.id));
+      if (call) {
+        state.seen.add(call.id);
+        const [caller] = await http('/rest/v1/users?id=eq.' + call.caller_id + '&select=display_name');
+        ring(call.id, (caller && caller.display_name) || 'Someone');
+      }
+      if (state.ringing && !calls.some((c) => c.id === state.ringing)) stopRinging('No longer ringing (answered elsewhere or rang out).');
+    } catch (e) { log('watch failed:', e.message); }
+  }
+  function ring(id, from) {
+    state.ringing = id;
+    $('incomingTitle').textContent = from + ' is calling ' + state.home.name;
+    $('incoming').classList.add('ringing');
+    beep();
+    state.ringTimer = setInterval(beep, 2000);
+    log('ringing:', from);
+  }
+  function stopRinging(why) {
+    clearInterval(state.ringTimer);
+    state.ringing = null;
+    $('incoming').classList.remove('ringing');
+    if (why) log(why);
+  }
+  let audioCtx;
+  function beep() {
+    try {
+      audioCtx = audioCtx || new AudioContext();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.08;
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.4);
+    } catch {}
+  }
+  async function answer() {
+    const id = state.ringing;
+    stopRinging();
+    const rows = await rpc('answer_call', { p_call_id: id });
+    if (!rows.length) { log('someone else answered first'); return; }
+    state.callId = id;
+    const access = await fn('call-token', { call_id: id });
+    await joinRoom(access);
+    follow(id);
+  }
+
+  // ── 3. Outgoing ─────────────────────────────────────────────────────────
+  async function callHome() {
+    setStatus('Calling ' + state.home.name + '…');
+    const out = await fn('place-call', { apartment_id: state.home.id });
+    state.callId = out.call.id;
+    log('placed call, rang', out.rang, 'phone(s)', out.note || '');
+    if (out.room) await joinRoom(out.room);
+    follow(out.call.id, out.call.ring_until);
+  }
+
+  // Polls the call row: connected, rang out, ended.
+  function follow(id, ringUntil) {
+    let rungOut = false;
+    const tick = async () => {
+      if (state.callId !== id) return;
+      try {
+        let [call] = await http('/rest/v1/calls?id=eq.' + id + '&select=state,answered_by,end_reason,caller_id');
+        if (call.state === 'ringing' && ringUntil && Date.now() > Date.parse(ringUntil) && !rungOut) {
+          rungOut = true;
+          call = await rpc('ring_out', { p_call_id: id, p_nobody_home: false });
+        }
+        if (call.state === 'ringing') setStatus('Ringing…');
+        else if (call.state === 'active') setStatus('Connected. Talk!');
+        else if (call.state === 'voicemail') {
+          setStatus('Nobody picked up → voicemail. (Recording is iPhone-only; ending the call.)');
+          await rpc('end_call', { p_call_id: id });
+          return finish();
+        } else return finish(call.state === 'missed' ? 'Missed.' : 'Call ended.');
+      } catch (e) { log('follow failed:', e.message); }
+      setTimeout(tick, 1500);
+    };
+    tick();
+  }
+
+  async function joinRoom(access) {
+    const LK = window.LivekitClient;
+    const room = new LK.Room({ adaptiveStream: true });
+    room.on(LK.RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; document.body.appendChild(el); }
+    });
+    room.on(LK.RoomEvent.ParticipantConnected, (p) => log('joined the room:', p.identity));
+    room.on(LK.RoomEvent.Disconnected, () => log('left the room'));
+    await room.connect(access.url, access.token);
+    await room.localParticipant.setMicrophoneEnabled(true);
+    state.room = room; state.muted = false;
+    log('in the voice room');
+    render();
+  }
+
+  async function hangUp() {
+    if (state.callId) { try { await rpc('end_call', { p_call_id: state.callId }); } catch (e) { log(e.message); } }
+    finish('You hung up.');
+  }
+  async function finish(why) {
+    state.callId = null;
+    if (state.room) { await state.room.disconnect(); state.room = null; }
+    document.querySelectorAll('audio[data-lk]').forEach((el) => el.remove());
+    if (why) setStatus(why);
+    render();
+  }
+  async function toggleMute() {
+    if (!state.room) return;
+    state.muted = !state.muted;
+    await state.room.localParticipant.setMicrophoneEnabled(!state.muted);
+    render();
+  }
+
+  // ── UI ──────────────────────────────────────────────────────────────────
+  function setStatus(text) { $('callStatus').textContent = text; }
+  function render() {
+    $('who').textContent = state.session ? 'Signed in as ' + ($('name').value.trim() || 'Browser test phone') + ' (' + state.session.user_id.slice(0, 8) + '…)' : 'Not signed in.';
+    $('home').innerHTML = '';
+    if (state.home) {
+      const p = document.createElement('div');
+      p.textContent = 'Home: ' + state.home.name + ' (@' + state.home.handle + '). Invite code for your iPhone:';
+      const c = document.createElement('div'); c.className = 'code'; c.textContent = state.home.code || '(joined with a code)';
+      $('home').append(p, c);
+    } else $('home').textContent = 'No home yet.';
+    const inCall = !!state.callId;
+    $('create').disabled = $('join').disabled = !state.session;
+    $('call').disabled = !state.home || inCall;
+    $('hangup').disabled = !inCall;
+    $('mute').disabled = !state.room;
+    $('mute').textContent = state.muted ? 'Unmute' : 'Mute';
+  }
+  const guard = (f) => async () => { try { await f(); } catch (e) { log('error:', e.message); setStatus(e.message); render(); } };
+
+  $('signin').onclick = guard(signIn);
+  $('signout').onclick = () => { store.clear(); location.reload(); };
+  $('create').onclick = guard(createHome);
+  $('join').onclick = guard(joinHome);
+  $('answer').onclick = guard(answer);
+  $('dismiss').onclick = () => stopRinging('ignored');
+  $('call').onclick = guard(callHome);
+  $('hangup').onclick = guard(hangUp);
+  $('mute').onclick = guard(toggleMute);
+
+  render();
+  setInterval(watch, 2000);
+  setInterval(reportHome, 30 * 60 * 1000);
+  reportHome();
+})();
+</script>
+</body>
+</html>

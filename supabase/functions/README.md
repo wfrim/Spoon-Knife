@@ -4,6 +4,7 @@
 |---|---|
 | `place-call` | Starts a call (`start_call`), pushes VoIP to the phones that should ring, returns the caller's LiveKit room token. Nobody home → straight to voicemail. |
 | `call-token` | LiveKit token for a call's room, for whoever the database says may be in it (answerer, roommates joining a call placed as the home). |
+| `invite-page/handler.ts` | The themed invite link page. Not deployed to Supabase (it won't serve HTML); `web/functions/j/[code].ts` runs it on Cloudflare Pages. |
 
 Tests: `deno task test` (no network; APNs, LiveKit and PostgREST are faked). CI runs them on every change here.
 
@@ -19,5 +20,7 @@ Tests: `deno task test` (no network; APNs, LiveKit and PostgREST are faked). CI 
 | `APNS_ENV` | `sandbox` for Xcode/TestFlight-dev builds, `production` for TestFlight/App Store |
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit Cloud → project → Settings → Keys |
 
-Deploy: `supabase functions deploy place-call call-token`.
+Deploy: the **Deploy Supabase** GitHub workflow (or `supabase functions deploy place-call call-token`).
+
+`WEB_TEST_PHONES=on` lets the browser test phone (`web/test-phone`) be rung without a push. Leave it off in production.
 Without APNs secrets, `place-call` still works but sends every home call straight to voicemail (and says so in `note`).

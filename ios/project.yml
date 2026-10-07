@@ -39,12 +39,13 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
+        CURRENT_PROJECT_VERSION: "1"   # CI sets the build number
     info:
       path: ApartmentLine/Info.plist
       properties:
         CFBundleDisplayName: Apartment Line
         CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocationWhenInUseUsageDescription: Location lets your apartment ring you when you're home.
@@ -81,12 +82,13 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
+        CURRENT_PROJECT_VERSION: "1"   # CI sets the build number
     info:
       path: AppClip/Info.plist
       properties:
         CFBundleDisplayName: Apartment Line
         CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSAppClip:

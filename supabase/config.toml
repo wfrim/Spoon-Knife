@@ -1,0 +1,2 @@
+# Supabase CLI config. Only what differs from the defaults.
+project_id = "apartment-line"

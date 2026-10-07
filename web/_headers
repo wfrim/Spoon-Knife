@@ -1,0 +1,5 @@
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+
+/test-phone/*
+  Cache-Control: no-store

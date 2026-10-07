@@ -7,6 +7,8 @@ struct PresenceSpikeView: View {
     @EnvironmentObject private var calls: CallManager
     @State private var callHandle = ""
     @State private var callLookupError: String?
+    @State private var inviteCode = ""
+    @State private var joining: PendingInvite?
     @StateObject private var permission = LocationPermission()
     @AppStorage("tester.name") private var testerName = ""
     @State private var showingHomeSetup = false
@@ -121,6 +123,13 @@ struct PresenceSpikeView: View {
     /// Phase 1 preview: ring a home by its handle, end to end.
     private var callSection: some View {
         Section {
+            HStack {
+                TextField("Invite code from the test phone", text: $inviteCode)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Join") { joining = PendingInvite(id: inviteCode.trimmingCharacters(in: .whitespaces)) }
+                    .disabled(inviteCode.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
             TextField("Home handle, e.g. theburrow", text: $callHandle)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -137,8 +146,9 @@ struct PresenceSpikeView: View {
         } header: {
             Text("Calls (preview)")
         } footer: {
-            Text("Rings whoever is home there. After 30 seconds you can leave a message; hanging up sends it.")
+            Text("Join the browser test phone's home, then call it by its handle. Rings whoever is home there. After 30 seconds you can leave a message; hanging up sends it.")
         }
+        .sheet(item: $joining) { invite in InviteJoinView(code: invite.id) }
     }
 
     private var phaseLabel: String {

@@ -1,0 +1,81 @@
+name: TestFlight
+
+# Builds, signs and uploads the app (and its App Clip) to TestFlight. Run it
+# from the Actions tab when you want a new build on your phone. Signing is
+# automatic through an App Store Connect API key, so no Mac or certificates
+# to manage. Secrets are listed in docs/SETUP.md.
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        run: |
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID APP_BUNDLE_ID SUPABASE_URL SUPABASE_ANON_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret $name (see docs/SETUP.md)"; exit 1; fi
+          done
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Write config and API key
+        working-directory: ios
+        run: |
+          # xcconfig treats // as a comment, hence the /$()/ trick.
+          url="${SUPABASE_URL/https:\/\//https:\/\$()\/}"
+          cat > Config/Secrets.xcconfig <<CONF
+          SUPABASE_URL = ${url}
+          SUPABASE_ANON_KEY = ${SUPABASE_ANON_KEY}
+          APP_BUNDLE_ID = ${APP_BUNDLE_ID}
+          APP_DEVELOPMENT_TEAM = ${APPLE_TEAM_ID}
+          CONF
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          xcodegen generate
+
+      - name: Archive
+        working-directory: ios
+        run: |
+          xcodebuild archive \
+            -project ApartmentLine.xcodeproj \
+            -scheme ApartmentLine \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/ApartmentLine.xcarchive" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            -quiet
+
+      - name: Upload to TestFlight
+        working-directory: ios
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" ExportOptions.plist
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/ApartmentLine.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "::notice::Build ${{ github.run_number }} uploaded. It shows up in TestFlight after Apple finishes processing (usually 5–15 min)."
+
+      - name: Remove key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

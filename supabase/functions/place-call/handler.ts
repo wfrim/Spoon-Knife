@@ -27,9 +27,15 @@ export interface Deps {
   db: Db;
   apns: Apns | null;
   livekit: LiveKitConfig | null;
+  /**
+   * Testing with one iPhone: the browser test phone (web/test-phone) registers a
+   * device token "web:<id>" and watches for ringing calls itself, so it counts
+   * as rung without a push. Off unless WEB_TEST_PHONES=on.
+   */
+  webTestPhones?: boolean;
 }
 
-export function makeHandler({ db, apns, livekit }: Deps) {
+export function makeHandler({ db, apns, livekit, webTestPhones = false }: Deps) {
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return json({});
     if (req.method !== "POST") return json({ error: "POST only" }, 405);
@@ -53,18 +59,22 @@ export function makeHandler({ db, apns, livekit }: Deps) {
       const targets = await db.rpc<{ user_id: string; device_id: string; voip_token: string }[]>(
         "call_fanout", { p_call_id: call.id }, null);
 
-      let rang = 0;
+      const isWeb = (t: { voip_token: string }) => t.voip_token.startsWith("web:");
+      const webPhones = webTestPhones ? targets.filter(isWeb).length : 0;
+      const pushTargets = targets.filter((t) => !isWeb(t));
+
+      let rang = webPhones;
       let pushNote: string | undefined;
-      if (targets.length && apns) {
+      if (pushTargets.length && apns) {
         const payload = await describe(db, call);
-        const results = await apns.sendVoip(targets.map((t) => t.voip_token), payload);
-        rang = results.filter((r) => r.ok).length;
+        const results = await apns.sendVoip(pushTargets.map((t) => t.voip_token), payload);
+        rang += results.filter((r) => r.ok).length;
         const dead = results.filter((r) => r.unregistered).map((r) => r.token);
         if (dead.length) {
           await db.patch("devices", `voip_token=in.(${dead.map((t) => `"${t}"`).join(",")})`, { voip_token: null })
             .catch((e) => console.error("token cleanup failed", e));
         }
-      } else if (targets.length) {
+      } else if (pushTargets.length) {
         pushNote = "APNs is not configured";
       }
 

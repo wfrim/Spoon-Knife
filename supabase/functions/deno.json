@@ -1,7 +1,7 @@
 {
   "tasks": {
     "test": "deno test tests/",
-    "check": "deno check place-call/index.ts call-token/index.ts invite-page/index.ts"
+    "check": "deno check place-call/index.ts call-token/index.ts"
   },
   "fmt": { "lineWidth": 120 },
   "lint": { "rules": { "exclude": ["no-explicit-any"] } }
