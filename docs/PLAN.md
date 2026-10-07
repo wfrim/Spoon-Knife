@@ -465,3 +465,25 @@ Three circles: **people** (individuals), **homes** (households), and **the publi
 
 - **Info.plist:** `NSLocationWhenInUseUsageDescription`, plus `NSLocationAlwaysAndWhenInUseUsageDescription`. No MapKit entitlement or API key is required.
 - **Storage:** we store `home_lat`, `home_lng`, `radius_m` and `city`. We don't store the street address; it's only used to place the pin.
+
+### Oct 9 — Keyholders (designed and built)
+
+- **Screen:** The Burrow → *Roommates & keys*. It lists everyone with a key badge.
+  - A Keyholder sees "Give keys" / "Take keys" / "Hand back" on each row, plus ⋯ → "Remove from The Burrow". Every action has a confirm sheet saying what changes.
+  - A roommate without keys sees the same list read-only, with "Ask for keys".
+  - Canvas Tweak `viewer` switches between the two views.
+- **What keys unlock:**
+  - who can ring the home (Neighbors / Anyone / Nobody)
+  - approving move-ins
+  - giving and taking keys
+  - removing a roommate
+- **What everyone can do:** answer, accept neighbors, invite, and record the greeting.
+- **Rules (enforced in Postgres, `20261009000000_keyholders.sql`):**
+  - `member_role` is now `keyholder | member`, and the creator is the first Keyholder.
+  - `set_keyholder(apt, user, on)`: Keyholders only. It refuses a change that would leave zero Keyholders (the last one can't hand back keys until someone else has them).
+  - `remove_roommate(apt, user)`: Keyholders only, and not yourself.
+  - `leave_apartment(apt)`: the only way to move out (direct DELETE on memberships is revoked). If the last Keyholder leaves, keys pass to the longest-standing roommate.
+  - `set_who_can_ring(apt, policy)` stores `apartments.who_can_ring` (default `neighbors`). The call fan-out enforces it once the neighbor tables land.
+  - `apartment_roster` now returns `role`, so the app can draw key badges.
+  - The roster rows are locked during key changes and move-outs, so two Keyholders acting at once can't orphan the home.
+- **Tests:** `supabase/tests/20_keyholders.sql`.

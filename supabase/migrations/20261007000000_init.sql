@@ -12,7 +12,7 @@
 
 create type public.presence_state  as enum ('home', 'away', 'unknown');
 create type public.presence_source as enum ('geofence', 'manual', 'heartbeat');
-create type public.member_role     as enum ('owner', 'member');
+create type public.member_role     as enum ('keyholder', 'member');
 create type public.call_state      as enum ('ringing', 'active', 'ended', 'missed');
 
 -- ─── Tables ─────────────────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ as $$
   )
 $$;
 
--- POST /apartments: creates the profile and makes the caller its owner.
+-- POST /apartments: creates the profile and makes the caller its first Keyholder.
 create function public.create_apartment(
   p_handle      text,
   p_name        text,
@@ -309,7 +309,7 @@ begin
           coalesce(p_radius_m, 200), p_status_line, p_emoji, nullif(trim(p_city), ''), auth.uid())
   returning * into a;
 
-  insert into public.memberships (user_id, apartment_id, role) values (auth.uid(), a.id, 'owner');
+  insert into public.memberships (user_id, apartment_id, role) values (auth.uid(), a.id, 'keyholder');
   return a;
 end;
 $$;
