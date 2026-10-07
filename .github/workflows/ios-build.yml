@@ -1,0 +1,42 @@
+name: iOS build
+
+# Compiles the app for the simulator with no signing, so it needs no Apple
+# account or secrets. Signing and TestFlight come later (see docs/BACKLOG.md).
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: |
+          cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
+          xcodegen generate
+
+      - name: Build for the simulator
+        working-directory: ios
+        run: |
+          xcodebuild -version
+          xcodebuild build \
+            -project ApartmentLine.xcodeproj \
+            -scheme ApartmentLine \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet

@@ -11,6 +11,7 @@ targets:
   ApartmentLine:
     type: application
     platform: iOS
+    scheme: {}
     sources:
       - path: ApartmentLine
     configFiles:
