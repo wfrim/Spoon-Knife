@@ -25,7 +25,7 @@ struct PresenceSpikeView: View {
                 callSection
                 historySection
             }
-            .navigationTitle("Apartment Line")
+            .navigationTitle("Home Phone")
             .refreshable { await store.heartbeat() }
             .sheet(isPresented: $showingHomeSetup) {
                 HomeSetupView(initial: store.home) { home in

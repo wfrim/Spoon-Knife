@@ -41,7 +41,7 @@ At developer.apple.com → **Certificates, Identifiers & Profiles**:
 
 1. **App ID**
    - Go to **Identifiers → + → App IDs → App**.
-   - Use the explicit bundle ID `app.apartmentline.<yourname>`.
+   - Use the explicit bundle ID `app.homephone.<yourname>`.
    - Turn on **Push Notifications** and **Associated Domains**.
 2. **App Clip ID**
    - Go to **Identifiers → + → App IDs → App Clip**.
@@ -66,7 +66,7 @@ Then at appstoreconnect.apple.com:
    | Secret | Value |
    |---|---|
    | `APPLE_TEAM_ID` | Team ID |
-   | `APP_BUNDLE_ID` | e.g. `app.apartmentline.yourname` |
+   | `APP_BUNDLE_ID` | e.g. `app.homephone.yourname` |
    | `ASC_KEY_ID` | The CI key's Key ID |
    | `ASC_ISSUER_ID` | The Issuer ID |
    | `ASC_KEY_P8` | The CI key's `.p8` file contents, including the BEGIN/END lines |
@@ -100,7 +100,7 @@ In Supabase → **Edge Functions → Secrets**, add:
    - Build output directory: `/`
 4. Under **Settings → Environment variables**, add `SUPABASE_URL` and `SUPABASE_ANON_KEY`, then redeploy.
 5. You get `https://<name>.pages.dev`. The test phone is at `/test-phone/`, and invite links work at `/j/<code>`.
-6. Later, attach your own domain and update `web/.well-known/apple-app-site-association` and `ios/project.yml` (`apartmentline.app` is a placeholder).
+6. Later, attach your own domain and update `web/.well-known/apple-app-site-association` and `ios/project.yml` (`homephone.app` is a placeholder).
 
 ---
 

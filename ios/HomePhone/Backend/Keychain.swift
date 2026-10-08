@@ -3,7 +3,7 @@ import Security
 
 /// Tiny generic-password store for the Supabase session.
 enum Keychain {
-    private static let service = "app.apartmentline"
+    private static let service = "app.homephone"
 
     static func data(for key: String) -> Data? {
         let query: [String: Any] = [

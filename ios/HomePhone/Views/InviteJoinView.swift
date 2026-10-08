@@ -1,42 +1,34 @@
 import SwiftUI
 
-extension Color {
-    init(hex: UInt32) {
-        self.init(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
-    }
-}
-
-/// "Join The Burrow": shown by the App Clip and by the app when an invite link
-/// opens it. Drawn in the home's own theme.
+/// "Join The Burrow": shown by the App Clip, by invite links, and by "I have
+/// an invite code" in onboarding. Drawn in the home's own theme.
 struct InviteJoinView: View {
     let code: String
+    /// Called after joining (the app moves on to the home).
+    var onJoined: (() -> Void)?
     /// Shown after joining (the App Clip offers the full app here).
     var afterJoin: (String) -> AnyView = { _ in AnyView(EmptyView()) }
 
     @State private var preview: InviteLink.Preview?
     @State private var loading = true
+    @State private var joining = false
     @State private var joined = false
     @State private var error: String?
 
     var body: some View {
-        let theme = InviteTheme.named(preview?.theme ?? "simple-cobalt")
-        let design: Font.Design = theme.rounded ? .rounded : theme.serif ? .serif : .default
-        ZStack {
-            Color(hex: theme.background).ignoresSafeArea()
+        let theme = Theme.named(preview?.theme)
+        ThemedScreen {
             VStack(alignment: .leading, spacing: 14) {
                 if loading {
-                    ProgressView().frame(maxWidth: .infinity)
+                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let preview {
                     Text("\(preview.invitedBy ?? "Your roommate") invited you to")
-                        .font(.system(.title3, design: design)).opacity(0.8)
-                    Text(preview.homeName)
-                        .font(.system(size: 44, weight: .heavy, design: design))
-                        .italic(theme.serif)
+                        .foregroundStyle(theme.muted)
+                    HomeNameBadge(name: preview.homeName, size: 44)
                     Text(summary(preview))
-                        .font(.system(.body, design: design))
                     Spacer()
                     if joined {
-                        Text("You're in! 🎉").font(.system(.title2, design: design).bold())
+                        Text("You're in! 🎉").font(theme.heading(26))
                         afterJoin(preview.homeName)
                     } else if preview.isFull {
                         Text("\(preview.homeName) is full. A home can have up to 8 people.")
@@ -44,23 +36,21 @@ struct InviteJoinView: View {
                         Button {
                             Task { await join() }
                         } label: {
-                            Text("Join \(preview.homeName)")
-                                .font(.system(.title3, design: design).bold())
-                                .frame(maxWidth: .infinity, minHeight: 56)
-                                .background(Color(hex: theme.accent), in: RoundedRectangle(cornerRadius: theme.rounded ? 28 : 16))
-                                .foregroundStyle(Color(hex: theme.onAccent))
+                            if joining { ProgressView() } else { Text("Join \(preview.homeName)") }
                         }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(joining)
                     }
                 } else {
-                    Text("This invite has expired").font(.title.bold())
+                    ThemedTitle(text: "This invite has expired")
                     Text("Invites last 7 days. Ask your roommate for a new one.")
                     Spacer()
                 }
-                if let error { Text(error).font(.footnote).foregroundStyle(.red) }
+                if let error { Text(error).font(.footnote).foregroundStyle(theme.danger) }
             }
-            .foregroundStyle(Color(hex: theme.ink))
             .padding(24)
         }
+        .environment(\.theme, theme)
         .task(id: code) { await load() }
     }
 
@@ -81,10 +71,13 @@ struct InviteJoinView: View {
     }
 
     private func join() async {
+        joining = true
+        defer { joining = false }
         do {
             _ = try await InviteLink.accept(code)
             joined = true
             error = nil
+            onJoined?()
         } catch {
             self.error = error.localizedDescription
         }

@@ -8,7 +8,7 @@ import CoreLocation
 /// run on every launch (AppDelegate does this).
 @MainActor
 final class HomeGeofence {
-    static let monitorName = "ApartmentLineHome"
+    static let monitorName = "HomePhoneHome"
     static let conditionID = "home"
 
     private var monitor: CLMonitor?

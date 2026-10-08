@@ -11,9 +11,9 @@ struct JoinClipApp: App {
         WindowGroup {
             Group {
                 if let code {
-                    InviteJoinView(code: code) { home in
+                    InviteJoinView(code: code, afterJoin: { home in
                         AnyView(GetFullApp(homeName: home))
-                    }
+                    })
                 } else {
                     Text("Open an invite link to join a home.")
                         .padding()
@@ -32,7 +32,7 @@ private struct GetFullApp: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Get Apartment Line so \(homeName) can ring you when you're home.")
+            Text("Get Home Phone so \(homeName) can ring you when you're home.")
             Button("Get the app") { showOverlay = true }
                 .buttonStyle(.borderedProminent)
         }

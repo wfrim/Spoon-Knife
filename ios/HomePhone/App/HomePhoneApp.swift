@@ -2,24 +2,31 @@ import BackgroundTasks
 import SwiftUI
 
 @main
-struct ApartmentLineApp: App {
+struct HomePhoneApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var invite: PendingInvite?
+    @StateObject private var app = AppModel()
 
     var body: some Scene {
         WindowGroup {
-            PresenceSpikeView()
+            RootView()
+                .environmentObject(app)
                 .environmentObject(PresenceStore.shared)
                 .environmentObject(CallManager.shared)
-                // Invite links (https://apartmentline.app/j/<code>) open the join screen.
+                // Invite links (https://homephone.app/j/<code>) open the join screen.
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                     if let code = InviteLink.code(from: activity.webpageURL) { invite = PendingInvite(id: code) }
                 }
                 .onOpenURL { url in
                     if let code = InviteLink.code(from: url) { invite = PendingInvite(id: code) }
                 }
-                .sheet(item: $invite) { invite in InviteJoinView(code: invite.id) }
+                .sheet(item: $invite) { invite in
+                    InviteJoinView(code: invite.id) {
+                        self.invite = nil
+                        Task { await app.refresh() }
+                    }
+                }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {

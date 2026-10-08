@@ -1,6 +1,6 @@
-# apartmentline.app (invite links)
+# homephone.app (invite links)
 
-Invite links are `https://apartmentline.app/j/<code>`. The domain needs to serve two things:
+Invite links are `https://homephone.app/j/<code>`. The domain needs to serve two things:
 
 1. **`/.well-known/apple-app-site-association`** (this folder), as `application/json`, no redirect.
    Replace `TEAMID` and the bundle id with yours. It tells iOS that `/j/*` opens the app, and that
@@ -15,4 +15,4 @@ It also hosts the **browser test phone** at `/test-phone/` (see docs/SETUP.md).
 Hosting: Cloudflare Pages, root directory `web`, env vars `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
 
 Then, in App Store Connect → the app → App Clip → Advanced App Clip Experiences, add
-`https://apartmentline.app/j/` as a prefix URL so every invite opens the App Clip card.
+`https://homephone.app/j/` as a prefix URL so every invite opens the App Clip card.

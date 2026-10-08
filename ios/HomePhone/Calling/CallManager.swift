@@ -268,7 +268,7 @@ extension CallManager: PKPushRegistryDelegate {
             let info = IncomingCallInfo(payload: payload.dictionaryPayload)
             let update = CXCallUpdate()
             update.remoteHandle = CXHandle(type: .generic, value: info?.callID.uuidString ?? "unknown")
-            update.localizedCallerName = info?.displayName ?? "Apartment Line"
+            update.localizedCallerName = info?.displayName ?? "Home Phone"
             update.hasVideo = false
             update.supportsHolding = false
             update.supportsDTMF = false

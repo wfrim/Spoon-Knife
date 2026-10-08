@@ -12,7 +12,7 @@ function handler(rows: unknown[]) {
   const db = fakeFetch({ "db.test/rest/v1/rpc/invite_preview": () => ok(rows) });
   const h = makeHandler({
     db: new Db("https://db.test", "anon-key", "service-key", db.fn),
-    config: { publicBase: "https://apartmentline.app", appStoreId: "123", clipBundleId: "app.al.Clip" },
+    config: { publicBase: "https://homephone.app", appStoreId: "123", clipBundleId: "app.al.Clip" },
   });
   return { h, db };
 }
@@ -22,11 +22,11 @@ Deno.test("renders a themed, unfurlable invite with the App Clip banner", async 
   const res = await h(new Request("https://fn/invite-page/j/burrow7k2q"));
   assertEquals(res.status, 200);
   const html = await res.text();
-  assertStringIncludes(html, '<meta property="og:title" content="Join The &lt;Burrow&gt; on Apartment Line">');
+  assertStringIncludes(html, '<meta property="og:title" content="Join The &lt;Burrow&gt; on Home Phone">');
   assertStringIncludes(html, "Maya invited you to The &lt;Burrow&gt; · Oakland. 3 people live there.");
   assertStringIncludes(html, 'app-clip-bundle-id=app.al.Clip, app-clip-display=card');
   assertStringIncludes(html, "background: #FFEFE3", "sticker-bubblegum page color");
-  assertStringIncludes(html, 'href="https://apartmentline.app/j/burrow7k2q"');
+  assertStringIncludes(html, 'href="https://homephone.app/j/burrow7k2q"');
   assert(!html.includes("<Burrow>"), "home names are escaped");
 
   // Looked up without an account.

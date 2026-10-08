@@ -3,7 +3,7 @@
 # iOS — the Xcode project is generated from ios/project.yml
 ios/*.xcodeproj
 ios/*.xcworkspace
-ios/ApartmentLine/Info.plist
+ios/HomePhone/Info.plist
 ios/Config/Secrets.xcconfig
 xcuserdata/
 DerivedData/
@@ -13,6 +13,6 @@ DerivedData/
 supabase/.branches
 supabase/.temp
 .env
-ios/ApartmentLine/ApartmentLine.entitlements
+ios/HomePhone/HomePhone.entitlements
 ios/AppClip/Info.plist
 ios/AppClip/AppClip.entitlements

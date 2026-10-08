@@ -1,4 +1,4 @@
-# Apartment Line — iOS Proof of Concept Plan
+# Home Phone — iOS Proof of Concept Plan
 
 Oct 6, 2026 · @Will Frimel
 
@@ -281,7 +281,7 @@ The POC needs a Mac with Xcode, a paid Apple Developer account, and 3–4 real i
 
 ## Product decisions (Oct 7)
 
-Design reference: the "Apartment Line App Design" canvas (App flows + Profile explorations pages).
+Design reference: the "Home Phone App Design" canvas (App flows + Profile explorations pages).
 
 ### Apartment styles
 

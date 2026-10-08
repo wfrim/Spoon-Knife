@@ -1,8 +1,8 @@
 # Generate the Xcode project with XcodeGen (brew install xcodegen):
 #   cd ios && xcodegen
-name: ApartmentLine
+name: HomePhone
 options:
-  bundleIdPrefix: app.apartmentline
+  bundleIdPrefix: app.homephone
   deploymentTarget:
     iOS: "17.2"   # push-started Live Activities (plan B5)
   createIntermediateGroups: true
@@ -13,21 +13,21 @@ packages:
     from: 2.5.0
 
 targets:
-  ApartmentLine:
+  HomePhone:
     type: application
     platform: iOS
     scheme: {}
     sources:
-      - path: ApartmentLine
+      - path: HomePhone
     dependencies:
       - package: LiveKit
-      - target: ApartmentLineClip
+      - target: HomePhoneClip
     entitlements:
-      path: ApartmentLine/ApartmentLine.entitlements
+      path: HomePhone/HomePhone.entitlements
       properties:
         aps-environment: development
         com.apple.developer.associated-domains:
-          - applinks:apartmentline.app
+          - applinks:homephone.app
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
@@ -41,36 +41,37 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         CURRENT_PROJECT_VERSION: "1"   # CI sets the build number
     info:
-      path: ApartmentLine/Info.plist
+      path: HomePhone/Info.plist
       properties:
-        CFBundleDisplayName: Apartment Line
+        CFBundleDisplayName: Home Phone
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocationWhenInUseUsageDescription: Location lets your apartment ring you when you're home.
-        NSLocationAlwaysAndWhenInUseUsageDescription: Apartment Line checks whether you're near home, even when the app is closed, so calls to your apartment only ring you when you're there. It only reports home or away, never where you are.
+        NSLocationAlwaysAndWhenInUseUsageDescription: Home Phone checks whether you're near home, even when the app is closed, so calls to your apartment only ring you when you're there. It only reports home or away, never where you are.
         UIBackgroundModes: [fetch, voip, audio]
         NSMicrophoneUsageDescription: Your microphone is used during calls and when you record a voicemail or greeting.
-        BGTaskSchedulerPermittedIdentifiers: [app.apartmentline.heartbeat]
+        BGTaskSchedulerPermittedIdentifiers: [app.homephone.heartbeat]
         SupabaseURL: $(SUPABASE_URL)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)
 
   # The App Clip: opens from invite links, joins the home, offers the full app.
-  ApartmentLineClip:
+  HomePhoneClip:
     type: application.on-demand-install-capable
     platform: iOS
     sources:
       - path: AppClip
-      - path: ApartmentLine/Backend
-      - path: ApartmentLine/Views/InviteJoinView.swift
+      - path: HomePhone/Backend
+      - path: HomePhone/Theme
+      - path: HomePhone/Views/InviteJoinView.swift
     entitlements:
       path: AppClip/AppClip.entitlements
       properties:
         com.apple.developer.parent-application-identifiers:
           - $(AppIdentifierPrefix)$(APP_BUNDLE_ID)
         com.apple.developer.associated-domains:
-          - appclips:apartmentline.app
+          - appclips:homephone.app
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
@@ -86,7 +87,7 @@ targets:
     info:
       path: AppClip/Info.plist
       properties:
-        CFBundleDisplayName: Apartment Line
+        CFBundleDisplayName: Home Phone
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}

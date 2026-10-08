@@ -34,8 +34,8 @@ jobs:
         run: |
           xcodebuild -version
           xcodebuild build \
-            -project ApartmentLine.xcodeproj \
-            -scheme ApartmentLine \
+            -project HomePhone.xcodeproj \
+            -scheme HomePhone \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \

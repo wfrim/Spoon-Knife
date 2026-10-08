@@ -18,6 +18,6 @@ enum AppConfig {
     }()
 
     /// Must match BGTaskSchedulerPermittedIdentifiers in project.yml.
-    static let heartbeatTaskID = "app.apartmentline.heartbeat"
+    static let heartbeatTaskID = "app.homephone.heartbeat"
     static let heartbeatInterval: TimeInterval = 4 * 60 * 60
 }

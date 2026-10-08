@@ -50,11 +50,11 @@ jobs:
         working-directory: ios
         run: |
           xcodebuild archive \
-            -project ApartmentLine.xcodeproj \
-            -scheme ApartmentLine \
+            -project HomePhone.xcodeproj \
+            -scheme HomePhone \
             -destination 'generic/platform=iOS' \
             -configuration Release \
-            -archivePath "$RUNNER_TEMP/ApartmentLine.xcarchive" \
+            -archivePath "$RUNNER_TEMP/HomePhone.xcarchive" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" \
@@ -67,7 +67,7 @@ jobs:
         run: |
           /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" ExportOptions.plist
           xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/ApartmentLine.xcarchive" \
+            -archivePath "$RUNNER_TEMP/HomePhone.xcarchive" \
             -exportOptionsPlist ExportOptions.plist \
             -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \

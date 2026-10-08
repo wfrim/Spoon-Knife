@@ -1,4 +1,4 @@
-# Apartment Line
+# Home Phone
 
 A shared landline for an apartment that lives in everyone's pocket, but only rings the roommates who are home.
 
@@ -22,7 +22,7 @@ docs/PLAN.md                      The plan (source of truth for decisions)
 ios/                              SwiftUI app (iOS 17.2+), generated with XcodeGen
   project.yml
   Config/Secrets.example.xcconfig
-  ApartmentLine/
+  HomePhone/
     App/        entry point, background heartbeat
     Presence/   CLMonitor home geofence, offline report queue, permissions
     Backend/    small Supabase REST client (anonymous auth for Phase 0)
@@ -61,7 +61,7 @@ brew install xcodegen
 cd ios
 cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig   # fill in URL, anon key, bundle id, team
 xcodegen
-open ApartmentLine.xcodeproj
+open HomePhone.xcodeproj
 ```
 
 Run on each test phone, set the location permission to **Always** with Precise Location on, then tap **Home** and set the circle.

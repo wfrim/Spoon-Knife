@@ -9,8 +9,8 @@ import { Db } from "../_shared/postgrest.ts";
 
 export interface InviteConfig {
   appStoreId?: string; // numeric App Store id, once the app is listed
-  clipBundleId?: string; // e.g. app.apartmentline.Clip
-  publicBase: string; // e.g. https://apartmentline.app
+  clipBundleId?: string; // e.g. app.homephone.Clip
+  publicBase: string; // e.g. https://homephone.app
 }
 
 interface Preview {
@@ -63,9 +63,9 @@ export function renderInvite(p: Preview, code: string, cfg: InviteConfig): strin
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Join ${home} on Apartment Line</title>
+<title>Join ${home} on Home Phone</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Join ${home} on Apartment Line">
+<meta property="og:title" content="Join ${home} on Home Phone">
 <meta property="og:description" content="${description}">
 <meta property="og:url" content="${link}">
 ${banner}
@@ -88,7 +88,7 @@ ${banner}
   <h1>${home}</h1>
   <p>${others}${where}. When you're home, calls to ${home} ring your phone. When nobody picks up, callers leave a message.</p>
   <a class="cta" href="${link}">Join ${home}</a>
-  <p class="small">Opens in Apartment Line, or right here with the App Clip, no download needed.</p>
+  <p class="small">Opens in Home Phone, or right here with the App Clip, no download needed.</p>
 </main>
 </body>
 </html>`;
